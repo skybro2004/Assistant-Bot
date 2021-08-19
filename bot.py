@@ -1,15 +1,14 @@
 Running_in = "Your Device Name"
 
 from asyncio.windows_events import NULL
-import json
-import sqlite3
 import discord
 from discord import embeds
-from discord.http import Route
-import datetime, time, os, random, asyncio, logging
-
 from discord import channel
+from discord.http import Route
+import datetime, time, os, random, asyncio, logging, json, sqlite3
+
 import diet
+from hangang import hangang
 
 #봇 토큰
 token = 'Your discord bot Token'
@@ -151,24 +150,8 @@ async def on_message(message):
                     data = diet.schlInfo(schlName)
 
                     #정상적으로 됐는지 판별
-                    #코드 -1 : 학교를 찾지 못함
-                    if data["code"]==-1:
-                        botMsg = await http.request(
-                            Route("PATCH", f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
-                            json={"content":"학교를 찿지 못했어요\n다시 입력해주세요"}
-                        )
-                        continue
-
-                    #코드 0 : 학교가 5개를 넘어감
-                    elif data["code"]==0:
-                        botMsg = await http.request(
-                            Route("PATCH", f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
-                            json={"content":"검색한 학교가 너무 많아요\n좀 더 자세하게 입력해주세요"}
-                        )
-                        continue
-
-                    #에러없음
-                    else:
+                    #코드 1 : 에러없음
+                    if data["code"]==1:
                         #컴포넌트(버튼)
                         components = [{"type": 1,"components": []}]
                         #컴포넌트 리스트에 검색한 학교 추가
@@ -195,7 +178,6 @@ async def on_message(message):
                                     cond4 = author==int(p["d"]["member"]["user"]["id"])
 
                                     return cond1 and cond2 and cond3 and cond4
-                                    return p["t"]=='INTERACTION_CREATE' and p["d"]["type"]==3 and botMsg["id"]==p["d"]["message"]["id"] and author==int(p["d"]["member"]["user"]["id"])
                                     
                                 except KeyError: #다른 이벤트와 꼬여 발생하는 에러 대처
                                     return False
@@ -238,6 +220,30 @@ async def on_message(message):
                                 json={"content":"등록 성공!", "components":[]}
                             )
                             return
+
+                    #코드 -1 : 학교를 찾지 못함
+                    elif data["code"]==-1:
+                        botMsg = await http.request(
+                            Route("PATCH", f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                            json={"content":"학교를 찿지 못했어요\n다시 입력해주세요"}
+                        )
+                        continue
+
+                    #코드 0 : 학교가 5개를 넘어감
+                    elif data["code"]==0:
+                        botMsg = await http.request(
+                            Route("PATCH", f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                            json={"content":"검색한 학교가 너무 많아요\n좀 더 자세하게 입력해주세요"}
+                        )
+                        continue
+
+                    else:
+                        botMsg = await http.request(
+                            Route("PATCH", f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                            json={"content":f"에러가 발생했습니다\n에러 코드 : {data['code']}"}
+                        )
+                        return
+
                         
         #밥
         if "급식" in message.content or "밥" in message.content:
@@ -359,12 +365,15 @@ async def on_message(message):
             voteResult[msg.get("id")] = {"user":[], "data":[0]*(len(msgSplit)-1)}
 
 
-
+    #한강
+    if message.content=="!한강":
+        await message.channel.send(f"현재 한강 수온 : {hangang()}°C")
     
 
 
 
 @client.event
+#TODO : 여기 싹다 정리
 async def on_socket_response(payload):
     d = payload.get("d", {})
     t = payload.get("t")
