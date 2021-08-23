@@ -4,9 +4,16 @@ from time import daylight
 import urllib.request as ul
 import urllib.parse as parse
 
+
 #api키
-key = "Your open api key"
-#visit https://open.neis.go.kr/ to get api key
+try:
+    with open('modules/key.txt') as key:
+        key = key.readline()
+except FileNotFoundError:
+    from setup import setup
+    setup()
+    with open('modules/key.txt') as key:
+        key = key.readline()
 
 #학교 검색
 def schlInfo(schlName):
@@ -89,5 +96,5 @@ def loadMeal(date, OfficeCode, SchoolCode):
 
 #디버그용
 if __name__=="__main__":
-    print(loadMeal("2021", "08", "18", "J10", "7530081"))
+    print(loadMeal("20210818", "J10", "7530081"))
     print(schlInfo("서당"))
