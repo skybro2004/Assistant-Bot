@@ -1,17 +1,27 @@
-Running_in = "Your Device Name"
+try:
+    with open('token.txt') as token:
+        token = token.readline()
+except FileNotFoundError:
+    from setup import setup
+    token = setup()
 
-from asyncio.windows_events import NULL
+try:
+    with open('device.txt') as device:
+        Running_in = device.readline()
+except FileNotFoundError:
+    Running_in = "Unknown Device"
+
+
+#from asyncio.windows_events import NULL
 import discord
 from discord import embeds
 from discord import channel
 from discord.http import Route
 import datetime, time, os, random, asyncio, logging, json, sqlite3
 
-import diet
-from hangang import hangang
-
-#봇 토큰
-token = 'Your discord bot Token'
+#내가 만든 모듈
+from modules import diet
+from modules import hangang
 
 #봇 선언
 client = discord.Client()
@@ -31,7 +41,7 @@ async def sendComponent(message, channel, components):
 path = os.path.dirname(os.path.realpath(__file__)).replace("\\", "/")
 
 #DB
-con = sqlite3.connect(f"{path}/diet/userData.db")
+con = sqlite3.connect(f"{path}/data/database.db")
 cursor = con.cursor()
 
 #로그 작성
@@ -64,7 +74,7 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-
+    
     #메시지 로그
     logger.info(f"{message.author} : {message.content}")
 
@@ -79,6 +89,7 @@ async def on_message(message):
     #핑
     if message.content=="!ping":
         await message.channel.send(f"pong! {round(round(client.latency, 4)*1000)}ms")
+        return
 
 
     #현재 상태
@@ -89,9 +100,11 @@ async def on_message(message):
         status_embed.add_field(name="Uptime", value=f"{str(datetime.datetime.now() - startTime).split('.')[0]}")
         status_embed.set_footer(text=f"hosting by {Running_in}")
         await message.channel.send(embed=status_embed)
+        return
 
 
     #도움말
+    #TODO : 걍 싹 다 갈아엎기
     if message.content.startswith("!help") or message.content.startswith("!도움") or message.content.startswith("!도움말"):
         if len(message.content.split(" ")) == 1:
             help_embed = discord.Embed(title='!help', color=0xfe0405)
@@ -99,7 +112,7 @@ async def on_message(message):
             help_embed.add_field(name="!help [기능]", value="입력한 기능의 도움말을 불러옵니다.", inline=False)
             help_embed.set_footer(text="(value):필수 입력값\n[value]:선택 입력값\n{value}:등록 시 생략가능")
             await message.channel.send(embed=help_embed)
-
+        return
 
     #로드맵
     if message.content=="!로드맵":
@@ -111,7 +124,7 @@ async def on_message(message):
         roadmap_embed.add_field(name="시간표", value="미정", inline=False)
         roadmap_embed.add_field(name="야추", value="예정 없음", inline=False)
         await message.channel.send(embed=roadmap_embed)
-
+        return
 
     #급식
     if str(message.channel)=="밥" or str(message.channel)=="test": #밥 채널 혹은 test채널에서만 작동
@@ -286,7 +299,7 @@ async def on_message(message):
 
             else: #등록안된 사용자
                 await message.channel.send("먼저 등록을 해주세요")
-
+            return
 
     
     #가위바위보(조작됨)
@@ -327,7 +340,87 @@ async def on_message(message):
     #투표
     if message.content.startswith("!투표"):
 
-        msgSplit = message.content.split(" ")
+        topic = ""
+        options = []
+
+        msgContent = message.content[3:]
+        msgContent = msgContent.split(",")
+        msgContent = [v.strip() for v in msgContent]
+        #print(msgContent)
+
+
+        if msgContent[0].startswith("주제"):
+            if ":" in msgContent[0]:
+                topic = msgContent[0].split(":")[1].strip()
+
+            else:
+                topic = msgContent[0][2:].strip()
+
+            
+            msgContent.pop(0)
+
+        
+        options = msgContent
+
+
+        
+        vote_embed = discord.Embed(title="!투표", description=f"{topic}")
+        vote_embed.add_field(name="a", value=str(options))
+        components = [
+            {
+                "type":1,
+                "components":[
+
+                ]
+            }
+        ]
+        print(str(options))
+
+        if options==[''] or options==[]:
+            components[0]["components"] = [
+                {
+                    "type":2,
+                    "label":"👍(0)",
+                    "style":3,
+                    "custom_id":0
+                },
+                {
+                    "type":2,
+                    "label":"👎(0)",
+                    "style":4,
+                    "custom_id":1
+                },
+            ]
+            options = ["y", "n"]
+
+        else:
+            for i, option in enumerate(options):
+                components[0]["components"].append({
+                    "type":2,
+                    "label":f"{option}(0)",
+                    "style":1,
+                    "custom_id":i
+                })
+
+        botMsg = await http.request(
+            Route("POST", f"/channels/{message.channel.id}/messages"),
+            json={"embed":vote_embed.to_dict()}
+        )
+
+        sums = [botMsg.get("id"), 0, 0, 0, 0, 0, '']
+        cursor.execute(
+            f"INSERT INTO vote VALUES(?, ?, ?, ?, ?, ?, ?)",
+            sums
+        )
+
+        botMsg = await http.request(
+            Route("PATCH", f"/channels/{message.channel.id}/messages/{botMsg.get('id')}"),
+            json={"embed":vote_embed.to_dict(), "components":components}
+        )
+
+        con.commit()
+
+        """msgSplit = message.content.split(" ")
 
         if 7<len(msgSplit):
             await message.channel.send("선택지가 너무 많아요!")
@@ -362,19 +455,81 @@ async def on_message(message):
             for i, item in enumerate(msgSplit[2:]):
                 components["components"][0]["components"].append({"type":2, "label":item + "(0)", "style":1, "custom_id":i+1})
             msg = await http.request(r, json=components)
-            voteResult[msg.get("id")] = {"user":[], "data":[0]*(len(msgSplit)-1)}
+            voteResult[msg.get("id")] = {"user":[], "data":[0]*(len(msgSplit)-1)}"""
 
 
     #한강
     if message.content=="!한강":
-        await message.channel.send(f"현재 한강 수온 : {hangang()}°C")
+        await message.channel.send(f"현재 한강 수온 : {hangang.hangang()}°C")
     
 
 
 
 @client.event
-#TODO : 여기 싹다 정리
+#TODO : 여기 싹 다 정리하기
 async def on_socket_response(payload):
+    #print(payload)
+    if payload.get("t", "") == "INTERACTION_CREATE" and payload.get("d", {}).get("type") == 3:
+        interaction_id = payload.get("d").get("id")
+        interaction_token = payload.get("d").get("token")
+        msgId = payload.get("d").get("message").get("id")
+        channelId = payload.get("d").get("channel_id")
+        selection = payload.get("d").get("data").get("custom_id")
+        userId = payload.get("d").get("member").get("user").get("id")
+
+        if payload.get("d").get("message").get("embeds")[0].get("title")=="!투표":
+            
+            selection = int(selection)
+
+            cursor.execute(
+                f"SELECT voted FROM vote WHERE id=?",
+                (msgId,)
+            )
+            voted = cursor.fetchone()[0]
+            print(voted)
+            votedArr = voted.split(",")
+            if userId in votedArr:
+                await client.http.request(
+                    Route("POST", f"/interactions/{interaction_id}/{interaction_token}/callback"),
+                    json={"type": 4, "data": {
+                        "content": "이미 투표했습니다!",
+                        "flags": 64
+                    }},
+                )
+                return
+            
+            pass
+
+            voted += userId + ","
+
+            cursor.execute(
+                f"SELECT opt{selection + 1} FROM vote WHERE id=?",
+                (msgId,)
+            )
+            value = cursor.fetchone()[0]
+            print(value)
+            
+            value += 1
+            components = payload.get("d").get("message").get("components")
+            components[0]["components"][selection]["label"] = components[0]["components"][selection]["label"][:-3] + f"({value})"
+            print(voted, type(voted))
+
+            cursor.execute(
+                f"UPDATE vote SET opt{selection + 1}=?, voted=? WHERE id=?",
+                (value, voted, msgId)
+            )
+            con.commit()
+            await http.request(
+                Route("PATCH", f"/channels/{channelId}/messages/{msgId}"),
+                json={"components": components}
+            )
+
+            await client.http.request(
+                Route("POST", f"/interactions/{interaction_id}/{interaction_token}/callback"),
+                json={"type": 6}
+            )
+
+'''
     d = payload.get("d", {})
     t = payload.get("t")
     if t == "INTERACTION_CREATE" and d.get("type") == 3:
@@ -435,6 +590,6 @@ async def on_socket_response(payload):
             )"""
             pass
         
-    return
+    return'''
     
 client.run(token)
