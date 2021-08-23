@@ -1,18 +1,18 @@
-import datetime
-import json
-from time import daylight
+import json, os
 import urllib.request as ul
 import urllib.parse as parse
 
+#파일 경로
+path = os.path.dirname(os.path.realpath(__file__)).replace("\\", "/")
 
 #api키
 try:
-    with open('modules/key.txt') as key:
+    with open(path + '/key.txt') as key:
         key = key.readline()
 except FileNotFoundError:
     from setup import setup
     setup()
-    with open('modules/key.txt') as key:
+    with open(path + '/key.txt') as key:
         key = key.readline()
 
 #학교 검색
