@@ -1,3 +1,4 @@
+#디스코드 봇 토큰 받아오기
 try:
     with open('token.txt') as token:
         token = token.readline()
@@ -5,6 +6,7 @@ except FileNotFoundError:
     from setup import setup
     token = setup()
 
+#현재 실행중인 디바이스 이름 받아오기
 try:
     with open('device.txt') as device:
         Running_in = device.readline()
@@ -135,7 +137,11 @@ async def on_message(message):
         #등록
         if message.content==("!등록"):
             #학교 이름 입력받기
-            botMsg = await sendComponent("학교 이름을 입력해주세요", message.channel.id, [])
+            botMsg = await http.request(
+                Route("POST", f"/channels/{message.channel.id}/messages"),
+                json = {"content":"학교 이름을 입력해주세요"}
+            )
+            #botMsg = await sendComponent("학교 이름을 입력해주세요", message.channel.id, [])
             def check(m):
                 return m.author.id == author and m.channel.id == int(botMsg["channel_id"])
 
@@ -339,33 +345,35 @@ async def on_message(message):
 
     #투표
     if message.content.startswith("!투표"):
-
+        #주제
         topic = ""
+        #선택지
         options = []
 
+        #메시지 쪼개기
         msgContent = message.content[3:]
         msgContent = msgContent.split(",")
         msgContent = [v.strip() for v in msgContent]
-        #print(msgContent)
 
-
+        #첫번째 요소가 "주제"로 시작하면 주제로 정함
         if msgContent[0].startswith("주제"):
+            #"주제:밥 뭐먹을까" 형식일시
             if ":" in msgContent[0]:
                 topic = msgContent[0].split(":")[1].strip()
-
+            #"주제 밥 뭐먹을까" 형식일시
             else:
                 topic = msgContent[0][2:].strip()
 
-            
             msgContent.pop(0)
 
-        
+        #나머지 요소를 전부 투표 항목으로 설정
         options = msgContent
+        if 5<len(options):
+            await message.channel.send("선택지가 너무 많아요!")
+            return
 
-
-        
+        #투표 메시지 임베드 설정
         vote_embed = discord.Embed(title="!투표", description=f"{topic}")
-        vote_embed.add_field(name="a", value=str(options))
         components = [
             {
                 "type":1,
@@ -374,8 +382,8 @@ async def on_message(message):
                 ]
             }
         ]
-        print(str(options))
 
+        #옵션이 주어지지 않았을 때, 찬반투표 진행
         if options==[''] or options==[]:
             components[0]["components"] = [
                 {
@@ -393,6 +401,7 @@ async def on_message(message):
             ]
             options = ["y", "n"]
 
+        #옵션이 주어졌을경우
         else:
             for i, option in enumerate(options):
                 components[0]["components"].append({
@@ -402,60 +411,30 @@ async def on_message(message):
                     "custom_id":i
                 })
 
+        #투표 메시지 보냄
         botMsg = await http.request(
             Route("POST", f"/channels/{message.channel.id}/messages"),
             json={"embed":vote_embed.to_dict()}
         )
 
-        sums = [botMsg.get("id"), 0, 0, 0, 0, 0, '']
+        #데이터베이스에 투표 데이터 저장
+        #id(int), opt1(int), opt2(int), opt3(int), opt4(int), opt5(int), voted(str)
+        #투표 메시지 id, 항목별 투표수, 투표한 사용자 id
+        arr = [botMsg.get("id"), 0, 0, 0, 0, 0, '']
         cursor.execute(
             f"INSERT INTO vote VALUES(?, ?, ?, ?, ?, ?, ?)",
-            sums
+            arr
         )
 
+        #데이터베이스 적용
+        con.commit()
+
+        #투표 메시지에 버튼 추가
         botMsg = await http.request(
             Route("PATCH", f"/channels/{message.channel.id}/messages/{botMsg.get('id')}"),
             json={"embed":vote_embed.to_dict(), "components":components}
         )
 
-        con.commit()
-
-        """msgSplit = message.content.split(" ")
-
-        if 7<len(msgSplit):
-            await message.channel.send("선택지가 너무 많아요!")
-
-        elif len(msgSplit)<3:
-            if len(msgSplit)==1:
-                voteEmbed = discord.Embed(title="!투표")
-            else:
-                voteEmbed = discord.Embed(title="!투표", description=msgSplit[1])
-            
-            r = Route('POST', f'/channels/{message.channel.id}/messages')
-            components = {
-                "embed":voteEmbed.to_dict(),
-                "components":[{
-                        "type":1,"components":[
-                            {"type":2, "label":"👍(0)", "style":3, "custom_id":"1"}, 
-                            {"type":2, "label":"👎(0)", "style":4, "custom_id":"2"}
-                        ]
-                }]
-            }
-            msg = await http.request(r, json=components)
-            voteResult[msg.get("id")] = {"user":[], "data":[0, 0]}
-                
-            
-        else:
-            voteEmbed = discord.Embed(title="!투표", description=msgSplit[1])
-            r = Route('POST', f'/channels/{message.channel.id}/messages')
-            components = {
-                    "embed":voteEmbed.to_dict(),
-                    "components":[{"type": 1,"components": []}]
-                }
-            for i, item in enumerate(msgSplit[2:]):
-                components["components"][0]["components"].append({"type":2, "label":item + "(0)", "style":1, "custom_id":i+1})
-            msg = await http.request(r, json=components)
-            voteResult[msg.get("id")] = {"user":[], "data":[0]*(len(msgSplit)-1)}"""
 
 
     #한강
@@ -464,12 +443,15 @@ async def on_message(message):
     
 
 
-
 @client.event
 #TODO : 여기 싹 다 정리하기
+#이벤트가 발생했을때
 async def on_socket_response(payload):
     #print(payload)
+    #버튼을 눌렀을때
     if payload.get("t", "") == "INTERACTION_CREATE" and payload.get("d", {}).get("type") == 3:
+
+        #기본적인 정보 변수로 지정(데이터 정제)
         interaction_id = payload.get("d").get("id")
         interaction_token = payload.get("d").get("token")
         msgId = payload.get("d").get("message").get("id")
@@ -477,17 +459,24 @@ async def on_socket_response(payload):
         selection = payload.get("d").get("data").get("custom_id")
         userId = payload.get("d").get("member").get("user").get("id")
 
-        if payload.get("d").get("message").get("embeds")[0].get("title")=="!투표":
+        #투표
+        if payload.get("d").get("message").get("embeds", [""])[0].get("title")=="!투표":
             
             selection = int(selection)
 
+            #데이터베이스에서 투표한 사람들 데이터를 불러옴
             cursor.execute(
                 f"SELECT voted FROM vote WHERE id=?",
                 (msgId,)
             )
+
+            #투표한 사람들
             voted = cursor.fetchone()[0]
-            print(voted)
+
+            #데이터 정제
             votedArr = voted.split(",")
+
+            #이미 투표했다면
             if userId in votedArr:
                 await client.http.request(
                     Route("POST", f"/interactions/{interaction_id}/{interaction_token}/callback"),
@@ -498,98 +487,42 @@ async def on_socket_response(payload):
                 )
                 return
             
-            pass
-
+            #투표한 사람들 리스트에 현재 사용자 추가
             voted += userId + ","
 
+            #투표 결과 불러옴
             cursor.execute(
                 f"SELECT opt{selection + 1} FROM vote WHERE id=?",
                 (msgId,)
             )
             value = cursor.fetchone()[0]
-            print(value)
             
+            #투표 결과에 1 추가
             value += 1
+            #컴포넌트에 투표 결과 1추가 적용
             components = payload.get("d").get("message").get("components")
             components[0]["components"][selection]["label"] = components[0]["components"][selection]["label"][:-3] + f"({value})"
-            print(voted, type(voted))
 
+            #투표 결과, 투표한 사람 데이터베이스에 업로드
             cursor.execute(
                 f"UPDATE vote SET opt{selection + 1}=?, voted=? WHERE id=?",
                 (value, voted, msgId)
             )
+
+            #데이터베이스 적용
             con.commit()
+
+            #투표 메시지 업데이트
             await http.request(
                 Route("PATCH", f"/channels/{channelId}/messages/{msgId}"),
                 json={"components": components}
             )
 
+            #응답
             await client.http.request(
                 Route("POST", f"/interactions/{interaction_id}/{interaction_token}/callback"),
                 json={"type": 6}
             )
 
-'''
-    d = payload.get("d", {})
-    t = payload.get("t")
-    if t == "INTERACTION_CREATE" and d.get("type") == 3:
-        interaction_id = d.get("id")
-        interaction_token = d.get("token")
-        custom_id = d.get("data", {}).get("custom_id")
-        message = d.get("message")
-        author = f"{d['member']['user']['username']}#{d['member']['user']['discriminator']}"
-
-
-        if message["embeds"][0]["title"]=="!투표":
-            try:
-                voteResult[message.get("id")]["user"]
-            except KeyError:
-                await client.http.request(
-                    Route("POST", f"/interactions/{interaction_id}/{interaction_token}/callback"),
-                    json={"type": 4, "data": {
-                        "content": "저런! 이 투표는 만료되었습니다!",
-                        "flags": 64
-                    }},
-                )
-                return
-            
-            if author in voteResult[message.get("id")]["user"]:
-                await client.http.request(
-                    Route("POST", f"/interactions/{interaction_id}/{interaction_token}/callback"),
-                    json={"type": 4, "data": {
-                        "content": "이미 투표했습니다!",
-                        "flags": 64
-                    }},
-                )
-                return
-
-            """if custom_id=="1":
-                voteResult[message.get("id")]["data"][0] += 1
-            elif custom_id=="2":
-                voteResult[message.get("id")]["data"][1] += 1"""
-            voteResult[message.get("id")]["data"][int(custom_id) - 1] += 1
-            r = Route('PATCH', f"/channels/{message.get('channel_id')}/messages/{message.get('id')}")
-            #components = message["components"]
-            components = {"embed":message["embeds"][0], "components":message["components"]}
-            """for i in range(len(components)):
-                components
-                pass"""
-            components["components"][0]["components"][int(custom_id) - 1]["label"] = components["components"][0]["components"][int(custom_id) - 1]["label"][:-3] + f"({voteResult[message.get('id')]['data'][int(custom_id) - 1]})"
-            #components = {"embed":message["embeds"][0],"components":[{"type":1,"components":[{"type":2, "label":f"👍({voteResult[message.get('id')]['data'][0]})", "style":3, "custom_id":"0"}, {"type":2, "label":f"👎({voteResult[message.get('id')]['data'][1]})", "style":4, "custom_id":"1"}]}]}
-            await http.request(r, json=components)
-            await client.http.request(
-                    Route("POST", f"/interactions/{interaction_id}/{interaction_token}/callback"),
-                    json={"type": 6}
-                )
-            voteResult[message.get("id")]["user"].append(author)
-
-        else:
-            """await client.http.request(
-                Route("POST", f"/interactions/{interaction_id}/{interaction_token}/callback"),
-                json={"type": 6}
-            )"""
-            pass
-        
-    return'''
     
 client.run(token)
