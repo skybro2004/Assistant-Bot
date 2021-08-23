@@ -1,6 +1,13 @@
+import discord
+from discord.http import Route
+import datetime, time, os, random, asyncio, logging, json, sqlite3
+
+#파일 경로
+path = os.path.dirname(os.path.realpath(__file__)).replace("\\", "/")
+
 #디스코드 봇 토큰 받아오기
 try:
-    with open('token.txt') as token:
+    with open(path + '/token.txt') as token:
         token = token.readline()
 except FileNotFoundError:
     from setup import setup
@@ -8,18 +15,10 @@ except FileNotFoundError:
 
 #현재 실행중인 디바이스 이름 받아오기
 try:
-    with open('device.txt') as device:
+    with open(path + '/device.txt') as device:
         Running_in = device.readline()
 except FileNotFoundError:
     Running_in = "Unknown Device"
-
-
-#from asyncio.windows_events import NULL
-import discord
-from discord import embeds
-from discord import channel
-from discord.http import Route
-import datetime, time, os, random, asyncio, logging, json, sqlite3
 
 #내가 만든 모듈
 from modules import diet
@@ -38,9 +37,6 @@ async def sendComponent(message, channel, components):
     }
     responseTemp = await http.request(r, json=payload)
     return responseTemp
-
-#파일 경로
-path = os.path.dirname(os.path.realpath(__file__)).replace("\\", "/")
 
 #DB
 con = sqlite3.connect(f"{path}/data/database.db")
