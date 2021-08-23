@@ -444,7 +444,7 @@ async def on_message(message):
 
 
 @client.event
-#TODO : 여기 싹 다 정리하기
+#TODO : ListOutOfIndex 에러 잡기
 #이벤트가 발생했을때
 async def on_socket_response(payload):
     #print(payload)
