@@ -36,3 +36,4 @@
  > 투표 항목이 없을 시, 찬반투표를 시행합니다.
 - - -
 개발자 이메일 : <skybro2004@gmail.com>
+<img src="https://mblogthumb-phinf.pstatic.net/MjAxODExMDRfMjU3/MDAxNTQxMzE5ODgyMTY5.iAzkyTXMwZQB_iRh0ezphby7I3e-Y6AmWCZobCJTu3kg.Og_PgCXVW6hMr059hVQF0gESjqjSdFik4t4TbfQdiLkg.JPEG.lph1000/%EA%B3%B5%EC%9D%B5%EC%9A%94%EC%9B%90%EC%9D%98_%EC%9C%84%EC%97%84_01.jpg?type=w2" width="20%"></img>
