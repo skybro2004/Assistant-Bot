@@ -23,6 +23,7 @@ except FileNotFoundError:
 #내가 만든 모듈
 from modules import diet
 from modules import hangang
+from modules import vpn
 
 #봇 선언
 client = discord.Client()
@@ -68,6 +69,46 @@ voteResult = {}
 async def on_ready():
     await client.change_presence(status=discord.Status.online, activity=discord.Game("Type !help or !도움말 for help"))
     logger.info(f"{'='*50}login as {client.user}{'='*50}")
+    vpnStatus = vpn.status()
+    if vpnStatus=="active":
+        vpnEmbed = discord.Embed(title="pivpn Status", description="Active!", color=0x00D166)
+        components = [
+            {
+                "type":1,
+                "components":[
+                    {
+                        "type":2,
+                        "label":"Turn Off",
+                        "style":4,
+                        "custom_id":"turnoff"
+                    }
+                ]
+            }
+        ]
+        await http.request(
+            Route("PATCH", f"/channels/878078846308585473/messages/878200358877405184"),
+            json={"embed":vpnEmbed.to_dict(), "components":components}
+        )
+        
+    elif vpnStatus=="inactive":
+        vpnEmbed = discord.Embed(title="pivpn Status", description="Inactive", color=0xF93A2F)
+        components = [
+            {
+                "type":1,
+                "components":[
+                    {
+                        "type":2,
+                        "label":"Turn On",
+                        "style":3,
+                        "custom_id":"turnon"
+                    }
+                ]
+            }
+        ]
+        await http.request(
+            Route("PATCH", f"/channels/878078846308585473/messages/878200358877405184"),
+            json={"embed":vpnEmbed.to_dict(), "components":components}
+        )
 
 
 @client.event
@@ -454,6 +495,58 @@ async def on_socket_response(payload):
         channelId = payload.get("d").get("channel_id")
         selection = payload.get("d").get("data").get("custom_id")
         userId = payload.get("d").get("member").get("user").get("id")
+
+        #vpn
+        if msgId=="878200358877405184":
+            if selection=="turnon":
+                vpn.turn_on()
+                vpnEmbed = discord.Embed(title="pivpn Status", description="Active!", color=0x00D166)
+                components = [
+                    {
+                        "type":1,
+                        "components":[
+                            {
+                                "type":2,
+                                "label":"Turn Off",
+                                "style":4,
+                                "custom_id":"turnoff"
+                            }
+                        ]
+                    }
+                ]
+                await http.request(
+                    Route("PATCH", f"/channels/878078846308585473/messages/878200358877405184"),
+                    json={"embed":vpnEmbed.to_dict(), "components":components}
+                )
+                await client.http.request(
+                    Route("POST", f"/interactions/{interaction_id}/{interaction_token}/callback"),
+                    json={"type": 6}
+                )
+
+            elif selection=="turnoff":
+                vpn.turn_off()
+                vpnEmbed = discord.Embed(title="pivpn Status", description="Inactive", color=0xF93A2F)
+                components = [
+                    {
+                        "type":1,
+                        "components":[
+                            {
+                                "type":2,
+                                "label":"Turn On",
+                                "style":3,
+                                "custom_id":"turnon"
+                            }
+                        ]
+                    }
+                ]
+                await http.request(
+                    Route("PATCH", f"/channels/878078846308585473/messages/878200358877405184"),
+                    json={"embed":vpnEmbed.to_dict(), "components":components}
+                )
+                await client.http.request(
+                    Route("POST", f"/interactions/{interaction_id}/{interaction_token}/callback"),
+                    json={"type": 6}
+                )
 
         #투표
         if payload.get("d").get("message").get("embeds", [""])[0].get("title")=="!투표":
