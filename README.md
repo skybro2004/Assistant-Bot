@@ -1,4 +1,5 @@
-# 조교봇(beta)
+조교봇(beta)
+=========
 조교봇은 디스코드를 통해 급식, 시간표, 자가진단 등 학교생활에 많은 도움을 줄 수 있는 SSA(Social Service Agent)입니다.   
 [초대 링크](https://discord.com/oauth2/authorize?client_id=803632194076540988&scope=bot)   
    
@@ -17,4 +18,3 @@
  - - -
     
 개발자 이메일 : <skybro2004@gmail.com>
-개발자마음에따라이계획은미뤄질수도또는미뤄지지않지않을수도있습니다
