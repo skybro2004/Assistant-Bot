@@ -1,9 +1,12 @@
 import subprocess
 
 def status():
-    status = subprocess.getstatusoutput("sudo systemctl is-active openvpn")
-    status = status[1]
-    return status
+    try:
+        status = subprocess.getstatusoutput("sudo systemctl is-active openvpn")
+        status = status[1]
+        return status
+    except:
+        return "unknown"
 
 def turn_on():
     subprocess.call("sudo systemctl start openvpn", shell=True)
