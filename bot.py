@@ -135,8 +135,8 @@ async def on_message(message):
     if message.content.startswith("!status"):
         status_embed = discord.Embed(title="status", description=f"log in as {client.user}", color=0xfe0405)
         status_embed.add_field(name="ping", value=f'{round(round(client.latency, 4)*1000)}ms')
+        status_embed.add_field(name="Uptime", value=f"{str(datetime.datetime.now() - startTime).split('.')[0]}", inline=False)
         status_embed.add_field(name="last update", value=lastUpdateTime)
-        status_embed.add_field(name="Uptime", value=f"{str(datetime.datetime.now() - startTime).split('.')[0]}")
         status_embed.set_footer(text=f"hosting by {Running_in}")
         await message.channel.send(embed=status_embed)
         return
@@ -145,25 +145,28 @@ async def on_message(message):
     #도움말
     #TODO : 걍 싹 다 갈아엎기
     if message.content.startswith("!help") or message.content.startswith("!도움") or message.content.startswith("!도움말"):
-        if len(message.content.split(" ")) == 1:
+        contents = message.content.split(" ")
+        if len(contents) == 1:
             help_embed = discord.Embed(title='!help', color=0xfe0405)
-            help_embed.add_field(name="!status", value="현재 조교봇의 상태를 불러옵니다.", inline=False)
-            help_embed.add_field(name="!help [기능]", value="입력한 기능의 도움말을 불러옵니다.", inline=False)
+            help_embed.add_field(name="`!status`", value="현재 조교봇의 상태를 불러옵니다.", inline=False)
+            help_embed.add_field(name="`!한강`", value="한강 수온을 불러옵니다.", inline=False)
+            help_embed.add_field(name="`!가위바위보`", value="조교봇과 가위바위보를 합니다.\n이긴 사람에게는 문화상품권을 지급합니다.", inline=False)
+            help_embed.add_field(name="`!help 급식`", value="급식 기능의 도움말을 불러옵니다.", inline=False)
+            help_embed.add_field(name="`!help 투표`", value="투표 기능의 도움말을 불러옵니다.", inline=False)
             help_embed.set_footer(text="(value):필수 입력값\n[value]:선택 입력값\n{value}:등록 시 생략가능")
-            await message.channel.send(embed=help_embed)
-        return
+        elif len(contents)==2:
+            print(contents[1])
+            if "급식" in contents:
+                help_embed = discord.Embed(title='급식', color=0xfe0405)
+                help_embed.add_field(name="`!등록`", value="급식을 불러오기 위한 정보를 등록합니다.", inline=False)
+                help_embed.add_field(name="`!급식`", value="급식 정보를 불러옵니다.", inline=False)
+                help_embed.set_footer(text="급식 관련 커맨드는 급식 채널에서만 사용 가능합니다.")
+            elif "투표" in contents:
+                help_embed = discord.Embed(title='투표', color=0xfe0405)
+                help_embed.add_field(name="`!투표 [항목]`", value="각 항목은 `,`로 구분합니다.\n첫번째 항목이 \"주제\"로 시작할 시 그 항목을 투표 주제로 선정합니다.\n투표 항목이 없다면 찬반투표를 진행합니다.", inline=False)
 
-    #로드맵
-    if message.content=="!로드맵":
-        roadmap_embed = discord.Embed(title="조교봇 로드맵", color=0xfe0405)
-        roadmap_embed.add_field(name="급식봇 날짜기능", value="이번달 안", inline=False)
-        roadmap_embed.add_field(name="짤봇", value="(beta)다음달 안\n(Alpha)올해 안", inline=False)
-        roadmap_embed.add_field(name="자가진단", value="미정(최대한 빠른 시일 내에)", inline=False)
-        roadmap_embed.add_field(name="투표 리워크", value="급식봇 완성 후", inline=False)
-        roadmap_embed.add_field(name="시간표", value="미정", inline=False)
-        roadmap_embed.add_field(name="야추", value="예정 없음", inline=False)
-        await message.channel.send(embed=roadmap_embed)
-        return
+        await message.channel.send(embed=help_embed)
+
 
     #급식
     if str(message.channel)=="밥" or str(message.channel)=="test": #밥 채널 혹은 test채널에서만 작동
