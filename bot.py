@@ -148,22 +148,22 @@ async def on_message(message):
         contents = message.content.split(" ")
         if len(contents) == 1:
             help_embed = discord.Embed(title='!help', color=0xfe0405)
-            help_embed.add_field(name="`!status`", value="현재 조교봇의 상태를 불러옵니다.", inline=False)
-            help_embed.add_field(name="`!한강`", value="한강 수온을 불러옵니다.", inline=False)
-            help_embed.add_field(name="`!가위바위보`", value="조교봇과 가위바위보를 합니다.\n이긴 사람에게는 문화상품권을 지급합니다.", inline=False)
-            help_embed.add_field(name="`!help 급식`", value="급식 기능의 도움말을 불러옵니다.", inline=False)
-            help_embed.add_field(name="`!help 투표`", value="투표 기능의 도움말을 불러옵니다.", inline=False)
+            help_embed.add_field(name="!status", value="현재 조교봇의 상태를 불러옵니다.", inline=False)
+            help_embed.add_field(name="!한강", value="한강 수온을 불러옵니다.", inline=False)
+            help_embed.add_field(name="!가위바위보", value="조교봇과 가위바위보를 합니다.\n이긴 사람에게는 문화상품권을 지급합니다.", inline=False)
+            help_embed.add_field(name="!help 급식", value="급식 기능의 도움말을 불러옵니다.", inline=False)
+            help_embed.add_field(name="!help 투표", value="투표 기능의 도움말을 불러옵니다.", inline=False)
+            help_embed.add_field(name="상세정보", value="[제작자 깃허브](https://github.com/skybro2004/Assistant-Bot)", inline=False)
             help_embed.set_footer(text="(value):필수 입력값\n[value]:선택 입력값\n{value}:등록 시 생략가능")
         elif len(contents)==2:
-            print(contents[1])
             if "급식" in contents:
                 help_embed = discord.Embed(title='급식', color=0xfe0405)
-                help_embed.add_field(name="`!등록`", value="급식을 불러오기 위한 정보를 등록합니다.", inline=False)
-                help_embed.add_field(name="`!급식`", value="급식 정보를 불러옵니다.", inline=False)
+                help_embed.add_field(name="!등록", value="급식을 불러오기 위한 정보를 등록합니다.", inline=False)
+                help_embed.add_field(name="!급식", value="급식 정보를 불러옵니다.", inline=False)
                 help_embed.set_footer(text="급식 관련 커맨드는 급식 채널에서만 사용 가능합니다.")
             elif "투표" in contents:
                 help_embed = discord.Embed(title='투표', color=0xfe0405)
-                help_embed.add_field(name="`!투표 [항목]`", value="각 항목은 `,`로 구분합니다.\n첫번째 항목이 \"주제\"로 시작할 시 그 항목을 투표 주제로 선정합니다.\n투표 항목이 없다면 찬반투표를 진행합니다.", inline=False)
+                help_embed.add_field(name="!투표 [항목]", value="각 항목은 ,로 구분합니다.\n첫번째 항목이 \"주제\"로 시작할 시 그 항목을 투표 주제로 선정합니다.\n투표 항목이 없다면 찬반투표를 진행합니다.", inline=False)
 
         await message.channel.send(embed=help_embed)
 
