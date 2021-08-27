@@ -29,6 +29,10 @@ def returnPath(fileName):
     elif fileName=="s":
         return f"메탈슬러그/S.gif"
 
+    #앵무
+    if fileName.endswith("앵무"):
+        return f"앵무/{fileName}.gif"
+
     #야인시대
     if fileName=="말도안돼":
         return f"야인시대/말도안돼.png"
@@ -46,16 +50,20 @@ def returnPath(fileName):
         return f"야인시대/오케이땡큐.png"
     elif fileName=="폭발" or fileName=="심영폭발":
         return f"야인시대/폭발.gif"
-    
-    #우리핵
-    if fileName.startswith("우리핵"):
-        return f"우리핵/{fileName}.gif"
 
     #에펙
     if fileName=="뱀부즐":
         return "뱀부즐.png"
     elif fileName=="뱀뱀부즐":
         return "뱀뱀부즐.png"
+    
+    #우리핵
+    if fileName.startswith("우리핵"):
+        return f"우리핵/{fileName}.gif"
+
+    #인공지능
+    if fileName.startswith("딥러닝"):
+        return f"인공지능/{fileName}.png"
 
     #잼민
     if fileName=="미국잼민" or fileName=="지건":
@@ -102,17 +110,27 @@ def returnPath(fileName):
         return f"핫산/{fileName}.png"
 
     #그 외
-    if fileName=="뇌혼란":
+    if fileName=="광클":
+        return "광클.gif"
+    elif fileName=="댄스로이":
+        return f"댄스로이.gif"
+    elif fileName=="뇌혼란":  
         return "뇌혼란.gif"
     elif fileName=="무지개엿":
         return f"무지개엿.png"
     elif fileName=="발작":
         return "발작.gif"
+    elif fileName=="벽박이" or fileName=="꼴박":
+        return f"벽박이.png"
+    elif fileName=="산" or fileName=="수화":
+        return f"산.png"
     elif fileName=="좌절":
         return f"좌절.gif"
     elif fileName=="짜라빠빠":
         return f"짜라빠빠.png"
     elif fileName=="하수구토":
         return "하수구토.png"
+    elif fileName=="회전잇님":
+        return f"회전잇님.gif"
 
     return "Notfound"
