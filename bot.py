@@ -20,24 +20,18 @@ try:
 except FileNotFoundError:
     Running_in = "Unknown Device"
 
+#자가진단
+import hcskr
+
 #내가 만든 모듈
 from modules import diet
 from modules import hangang
 from modules import vpn
+from modules import dccon
 
 #봇 선언
 client = discord.Client()
 http = client.http
-
-#컴포넌트 메시지 보내는 함수
-async def sendComponent(message, channel, components):
-    r = Route('POST', f'/channels/{channel}/messages')
-    payload = {
-        "content":message,
-        "components":components
-    }
-    responseTemp = await http.request(r, json=payload)
-    return responseTemp
 
 #DB
 con = sqlite3.connect(f"{path}/data/database.db")
@@ -59,8 +53,23 @@ lastUpdateTime = datetime.datetime.fromtimestamp(os.path.getmtime(__file__)).str
 #업타임
 startTime = datetime.datetime.now()
 
-#투표
-voteResult = {}
+#자가진단
+async def tokenize(name, birth, office, schlName, pw):
+    '''if schlName.endswith("유치원"):
+        level = "유치원"
+    elif schlName.endswith("초등학교"):
+        level = "초등학교"
+    elif schlName.endswith("중학교"):
+        level = "중학교"
+    elif schlName.endswith("고등학교"):
+        level = "고등학교"
+    else:
+        level = "특수학교"'''
+    hcskr.generatetoken(name, birth, office, schlName, "고등학교", pw)
+    #loop = asyncio.get_event_loop()
+    #loop.run_until_complete(hcskr.asyncGenerateToken(name, birth, office, schlName, "고등학교", pw))
+    #await hcskr.asyncGenerateToken(name, birth, office, schlName, "고등학교", pw)
+    return
 
 #main====================================================================
 
@@ -143,7 +152,6 @@ async def on_message(message):
 
 
     #도움말
-    #TODO : 걍 싹 다 갈아엎기
     if message.content.startswith("!help") or message.content.startswith("!도움") or message.content.startswith("!도움말"):
         contents = message.content.split(" ")
         if len(contents) == 1:
@@ -181,7 +189,7 @@ async def on_message(message):
                 Route("POST", f"/channels/{message.channel.id}/messages"),
                 json = {"content":"학교 이름을 입력해주세요"}
             )
-            #botMsg = await sendComponent("학교 이름을 입력해주세요", message.channel.id, [])
+
             def check(m):
                 return m.author.id == author and m.channel.id == int(botMsg["channel_id"])
 
@@ -347,7 +355,206 @@ async def on_message(message):
                 await message.channel.send("먼저 등록을 해주세요")
             return
 
+
+    #자가진단
+    if str(message.channel)=="자가진단" or str(message.channel)=="test":
     
+        #사용자의 id 저장
+        author = message.author.id
+
+        #등록
+        if message.content=="!등록":
+            await message.channel.send("준비중입니다")
+            return
+            name = ""
+            birth = ""
+            schlName = ""
+            office = ""
+            pw = ""
+            
+            def msgCheck(m):
+                return m.author.id == author and m.channel.id == int(botMsg["channel_id"])
+
+            #이름 입력받기
+            botMsg = await http.request(
+                Route("POST", f"/channels/{message.channel.id}/messages"),
+                json = {"content":"이름을 입력해주세요"}
+            )
+
+            while 1:
+                try:
+                    usrMsg = await client.wait_for('message', timeout=30.0, check=msgCheck)
+
+                except asyncio.TimeoutError:
+                    await http.request(
+                        Route('PATCH', f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                        json={"content":"시간 초과"}
+                    )
+                    return
+                
+                else:
+                    name = usrMsg.content
+                    await usrMsg.delete()
+                    break
+
+            botMsg = await http.request(
+                Route("PATCH", f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                json = {"content":"생년월일을 입력해주세요(YYMMDD 6자리)"}
+            )
+
+            while 1:
+                try:
+                    usrMsg = await client.wait_for('message', timeout=30.0, check=msgCheck)
+
+                except asyncio.TimeoutError:
+                    await http.request(
+                        Route('PATCH', f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                        json={"content":"시간 초과"}
+                    )
+                    return
+                
+                else:
+                    try:
+                        int(usrMsg.content)
+                    except ValueError:
+                        await http.request(
+                            Route('PATCH', f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                            json={"content":"생년월일을 정확히 입력해주세요!"}
+                        )
+                        await usrMsg.delete()
+                        continue
+                    else:
+                        if len(usrMsg.content)==6:
+                            birth = usrMsg.content
+                            await usrMsg.delete()
+                            break
+                        elif len(usrMsg.content)==8:
+                            birth = usrMsg.content[2:]
+                            await usrMsg.delete()
+                            break
+                        else:
+                            await usrMsg.delete()
+                            await http.request(
+                                Route('PATCH', f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                                json={"content":"생년월일을 정확히 입력해주세요!"}
+                            )
+                            continue
+                
+            #학교 이름 입력받기
+            botMsg = await http.request(
+                Route("PATCH", f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                json = {"content":"학교 이름을 입력해주세요"}
+            )
+
+            while 1:
+                try:
+                    #30초간 사용자 응답을 기다림
+                    usrMsg = await client.wait_for('message', timeout=30.0, check=msgCheck)
+                    
+                except asyncio.TimeoutError: #30초간 응답을 하지 않았을시
+                    await http.request(
+                        Route('PATCH', f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                        json={"content":"시간 초과"}
+                    )
+                    return
+                else:
+                    #데이터 정제 및 메시지 삭제
+                    schlName = usrMsg.content
+                    await usrMsg.delete()
+
+                    #검색결과 불러오기
+                    data = diet.schlInfo(schlName)
+
+                    #정상적으로 됐는지 판별
+
+                    #코드 -1 : 학교를 찾지 못함
+                    if data["code"]==-1:
+                        botMsg = await http.request(
+                            Route("PATCH", f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                            json={"content":"학교를 찿지 못했어요\n다시 입력해주세요"}
+                        )
+                        continue
+
+                    #코드 0 : 학교가 5개를 넘어감
+                    elif data["code"]==0:
+                        botMsg = await http.request(
+                            Route("PATCH", f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                            json={"content":"검색한 학교가 너무 많아요\n좀 더 자세하게 입력해주세요"}
+                        )
+                        continue
+
+                    #알수없는 에러
+                    elif data["code"]!=1:
+                        botMsg = await http.request(
+                            Route("PATCH", f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                            json={"content":f"에러가 발생했습니다\n에러 코드 : {data['code']}"}
+                        )
+                        return
+
+                    #코드 1 : 에러없음
+                    elif data["code"]==1:
+                        #컴포넌트(버튼)
+                        components = [{"type": 1,"components": []}]
+                        #컴포넌트 리스트에 검색한 학교 추가
+                        for i, school in enumerate(data["schools"]):
+                            components[0]["components"].append({"type":2, "style":1, "label":f"{school['schlName']}({school['office']})", "custom_id":i})
+
+                        #메시지 수정(버튼 추가)
+                        botMsg = await http.request(
+                            Route("PATCH", f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                            json={"content":"학교를 선택해주세요", "components":components}
+                        )
+                        
+                        try:
+                            
+                            def buttonCheck(p):
+                                try:
+
+                                    #발생한 이벤트가 '버튼을 눌렀는가' 인가?
+                                    cond1 = p["t"]=='INTERACTION_CREATE'
+                                    cond2 = p["d"]["type"]==3
+                                    #이 메시지에서 일어난 이벤트인가?
+                                    cond3 = botMsg["id"]==p["d"]["message"]["id"]
+                                    #이벤트를 발생시킨(버튼을 누른) 사용자가 현재 등록 진행중인 사용자인가?
+                                    cond4 = author==int(p["d"]["member"]["user"]["id"])
+                                    print(cond1, cond2, cond3, cond4)
+                                    return cond1 and cond2 and cond3 and cond4
+                                    
+                                except KeyError: #다른 이벤트와 꼬여 발생하는 에러 대처
+                                    return False
+                            
+                            #30초간 응답을 기다림
+                            schlName = await client.wait_for("socket_response", timeout=30.0, check=buttonCheck)
+
+                        except asyncio.TimeoutError: #30초간 응답없음
+                            await http.request(
+                                Route('PATCH', f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                                json={"content":"시간 초과", "components":[]}
+                            )
+                            return
+
+                        else:
+
+                            data = data["schools"][int(schlName["d"]["data"]["custom_id"])]
+                            schlName = data["schlName"]
+                            office = data["office"]
+                            break
+
+            #(name, birth, office, schlName, "0000")
+            #result = await hcskr.generatetoken(name, birth, office, schlName, "고등학교", "0000") #리턴값 참고하세요
+            #print(result)
+
+            print()
+            print("nullll")
+            print()
+            hcskr.selfcheck(name, birth, office, schlName, "고등학교", "0000")
+
+            #                                                    name, birth, office, schlName, pw
+            #tokenize()
+
+
+
+
     #가위바위보(조작됨)
     if message.content.startswith('!가위바위보'):
         rsp = ["가위","바위","보"]
@@ -476,6 +683,20 @@ async def on_message(message):
         )
 
 
+    #짤
+    if message.content.startswith("~") and not(message.content.startswith("~~")):
+        fileName = dccon.returnPath(message.content[1:].replace(" ", "").lower())
+
+        try:
+            await message.channel.send(file=discord.File(path + f"/modules/img/{fileName}"))
+        except FileNotFoundError:
+            pass
+        """await message.channel.send("100X100px")
+        await message.channel.send(file=discord.File('modules/img/뱀뱀부즐.png'))
+        await message.channel.send("210X210px")
+        await message.channel.send(file=discord.File('허미.png'))
+        await message.channel.send("300X300px")
+        await message.channel.send(file=discord.File('modules/img/둘리.jpg'))"""
 
     #한강
     if message.content=="!한강":
