@@ -134,6 +134,8 @@ def returnPath(fileName):
         return f"좌절.gif"
     elif fileName=="짜라빠빠":
         return f"짜라빠빠.png"
+    elif fileName=="펀쿨끄덕":
+        return f"펀쿨끄덕.gif"
     elif fileName=="하수구토":
         return "하수구토.png"
     elif fileName=="회전잇님":
