@@ -52,10 +52,16 @@ def returnPath(fileName):
         return f"야인시대/폭발.gif"
 
     #에펙
-    if fileName=="뱀부즐":
-        return "뱀부즐.png"
+    if "눈물" in fileName:
+        return f"에펙/{fileName}.png"
+    elif fileName=="뱀부즐":
+        return f"에펙/뱀부즐.png"
     elif fileName=="뱀뱀부즐":
-        return "뱀뱀부즐.png"
+        return f"에펙/뱀뱀부즐.png"
+    elif fileName=="고뱀부즐":
+        return f"에펙/고뱀부즐.png"
+    elif fileName=="뱀부맘":
+        return f"에펙/뱀부맘.png"
     
     #우리핵
     if fileName.startswith("우리핵"):
