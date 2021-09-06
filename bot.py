@@ -21,7 +21,7 @@ except FileNotFoundError:
     Running_in = "Unknown Device"
 
 #자가진단
-import hcskr
+#import hcskr
 
 #내가 만든 모듈
 from modules import diet
