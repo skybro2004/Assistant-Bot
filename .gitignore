@@ -7,3 +7,4 @@ discordServer.log
 modules/img/
 */__pycache__/
 /__pycache__/
+data/database.db

@@ -1,6 +1,6 @@
 import discord
 from discord.http import Route
-import datetime, time, os, random, asyncio, logging, json, sqlite3
+import datetime, time, os, asyncio, logging, json, sqlite3
 
 #파일 경로
 path = os.path.dirname(os.path.realpath(__file__)).replace("\\", "/")
@@ -557,6 +557,76 @@ async def on_message(message):
 
     #가위바위보(조작됨)
     if message.content.startswith('!가위바위보'):
+
+        rsp = ["보", "가위", "바위", "보", "가위"]
+        botMsg = await message.channel.send("가위바위보를 합니다\n10초내로 (가위/바위/보)를 선택해 주세요!")
+        components = [
+            {
+                "type":1,
+                "components":[
+                {
+                    "type":2,
+                    "label":"가위",
+                    "style":1,
+                    "custom_id":0
+                },
+                {
+                    "type":2,
+                    "label":"바위",
+                    "style":1,
+                    "custom_id":1
+                },
+                {
+                    "type":2,
+                    "label":"보",
+                    "style":1,
+                    "custom_id":2
+                },
+            ]
+            }
+        ]
+        botMsg = await http.request(
+            Route("PATCH", f"/channels/{message.channel.id}/messages/{botMsg.id}"),
+            json={"components":components}
+        )
+        def buttonCheck(p):
+            try:
+                cond1 = p["t"]=='INTERACTION_CREATE'
+                cond2 = p["d"]["type"]==3
+                cond3 = botMsg["id"]==p["d"]["message"]["id"]
+                cond4 = author==int(p["d"]["member"]["user"]["id"])
+                return cond1 and cond2 and cond3 and cond4
+            except KeyError:
+                return False
+        
+        try:
+            payload = await client.wait_for("socket_response", timeout=10.0, check=buttonCheck)
+        except asyncio.TimeoutError:
+            await http.request(
+                Route('PATCH', f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                json={"content":"시간 초과", "components":[]}
+            )
+            return
+
+        else:
+            res = int(payload["d"]["data"]["custom_id"]) + 1
+            if message.id%3==0:
+                await http.request(
+                    Route('PATCH', f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                    json={"content":f"전 {rsp[res + 1]}를 냈고, 당신은 {rsp[res]}를 냈네요.\n제가 이겼어요!", "components":[]}
+                )
+            elif message.id%3==1:
+                await http.request(
+                    Route('PATCH', f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                    json={"content":f"전 {rsp[res]}를 냈고, 당신은 {rsp[res]}를 냈네요.\n비겼네요!", "components":[]}
+                )
+            else:
+                await http.request(
+                    Route('PATCH', f"/channels/{botMsg.get('channel_id')}/messages/{botMsg.get('id')}"),
+                    json={"content":f"전 {rsp[res - 1]}를 냈고, 당신은 {rsp[res]}를 냈네요.\n제가 졌네요!", "components":[]}
+                )
+
+        return
         rsp = ["가위","바위","보"]
         embed = discord.Embed(title="가위바위보",description="가위바위보를 합니다 3초내로 (가위/바위/보)를 써주세요!", color=0x00aaaa)
         channel = message.channel
