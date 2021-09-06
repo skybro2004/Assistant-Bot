@@ -594,7 +594,8 @@ async def on_message(message):
                 cond1 = p["t"]=='INTERACTION_CREATE'
                 cond2 = p["d"]["type"]==3
                 cond3 = botMsg["id"]==p["d"]["message"]["id"]
-                cond4 = author==int(p["d"]["member"]["user"]["id"])
+                cond4 = message.author.id==int(p["d"]["member"]["user"]["id"])
+                print(cond1, cond2, cond3, cond4)
                 return cond1 and cond2 and cond3 and cond4
             except KeyError:
                 return False
