@@ -329,10 +329,10 @@ async def on_message(message):
                 todayDiet = diet.loadMeal(datetime.datetime.today().strftime("%Y%m%d"), temp[1], temp[2])
 
 
-                if todayDiet["Code"]==200: #정상작동
+                if todayDiet["code"]==200: #정상작동
 
                     #급식 정보 전송
-                    dietStr = '\n'.join(todayDiet['Meal'])
+                    dietStr = '\n'.join(todayDiet['meal'])
                     
                     diet_embed = discord.Embed(
                         title=f"{datetime.datetime.today().strftime('%m월 %d일')} (학교이름) 급식",
@@ -341,15 +341,15 @@ async def on_message(message):
                     )
 
                     diet_embed.add_field(name="중식", value=dietStr, inline=True)
-                    diet_embed.set_footer(text=todayDiet['Cal'])
+                    diet_embed.set_footer(text=todayDiet['cal'])
 
                     await message.channel.send(embed=diet_embed)
 
-                elif todayDiet["Code"]==-1: #api 불러오기는 정상적으로 작동했으나 급식을 불러오지 못함(대부분의 경우 그 날 급식이 없음)
+                elif todayDiet["code"]==-1: #api 불러오기는 정상적으로 작동했으나 급식을 불러오지 못함(대부분의 경우 그 날 급식이 없음)
                     await message.channel.send("오늘은 급식이 없습니다.")
 
                 else: #에러
-                    await message.channel.send(f"급식을 불러올 수 없어요\n에러코드 : {todayDiet['Code']}")
+                    await message.channel.send(f"급식을 불러올 수 없어요\n에러코드 : {todayDiet['code']}")
 
             else: #등록안된 사용자
                 await message.channel.send("먼저 등록을 해주세요")

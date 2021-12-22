@@ -53,15 +53,16 @@ def schlInfo(schlName):
     else:
         return {"code":response.getcode()}
 
-    
+
+
 #급식 불러오기
 def loadMeal(date, OfficeCode, SchoolCode):
 
     #url 정하기
-    mealUrl = f"https://open.neis.go.kr/hub/mealServiceDietInfo?KEY={key}&Type=json&pIndex=1&pSize=31"
-    mealUrl += f"&ATPT_OFCDC_SC_CODE={OfficeCode}"
-    mealUrl += f"&SD_SCHUL_CODE={SchoolCode}"
-    mealUrl += f"&MLSV_FROM_YMD={date}&MLSV_TO_YMD={date}"
+    mealUrl = f"https://api.skybro2004.com/meal"
+    mealUrl += f"?officeCode={OfficeCode}"
+    mealUrl += f"&schlCode={SchoolCode}"
+    mealUrl += f"&date={date}"
 
     #요청
     request = ul.Request(mealUrl)
@@ -74,25 +75,29 @@ def loadMeal(date, OfficeCode, SchoolCode):
         #json 디코드
         responseData = json.loads(responseData)
 
-        #데이터 정제
-        try:
-            responseData = responseData["mealServiceDietInfo"][1]["row"][0]
-        except KeyError: #급식 없는날. 왜 응답코드가 에러가 아닌 정상으로 해놨는지 모르겠음
-            return {"Code":-1, "Meal":"급식이 없어요!"}
+        #급식 없는 날 판단
+        if responseData["code"]==404:
+            return {"code":-1, "Meal":"급식이 없어요!"}
         
-        #급식 값 불러오기
-        Meal = responseData["DDISH_NM"]
-        #줄바꿈 기준으로 쪼개기
-        Meal = list(Meal.split("<br/>"))
+        #급식 불러오기
+        meals = responseData["meal"]
 
-        #총 칼로리 불러오기
-        Calorie = responseData["CAL_INFO"]
-        
+        mealList = []
+        #급식 이름만 빼옴
+        for meal in meals:
+            mealList.append(meal["name"])
+        #칼로리 불러옴
+        cal = responseData["cal"]
         #리턴
-        return {"Code":200, "Meal":Meal, "Cal":Calorie}
+        return {"code":200, "meal":mealList, "cal":cal}
+
+        
+
     else:
-        #에러코드 리턴
-        return {"Code":response.getcode()}
+        #알 수 없는 에러
+        return {"code":response.getcode()}
+
+
 
 #디버그용
 if __name__=="__main__":
